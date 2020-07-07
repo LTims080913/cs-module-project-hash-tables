@@ -1,3 +1,5 @@
+from doubly_linked_list import DoublyLinkedList
+
 class HashTableEntry:
     """
     Linked List hash table key/value pair
@@ -13,15 +15,12 @@ MIN_CAPACITY = 8
 
 
 class HashTable:
-    """
-    A hash table that with `capacity` buckets
-    that accepts string keys
-
-    Implement this.
-    """
 
     def __init__(self, capacity):
         # Your code here
+        self.capacity = capacity
+        self.counter = 0
+        self.containers = [DoublyLinkedList() for i in range(capacity)]
 
 
     def get_num_slots(self):
@@ -35,6 +34,7 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        return self.capacity
 
 
     def get_load_factor(self):
@@ -44,6 +44,7 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        return 1.0 - ((self.capacity - self.counter) / self.capacity)
 
 
     def fnv1(self, key):
@@ -63,7 +64,10 @@ class HashTable:
         Implement this, and/or FNV-1.
         """
         # Your code here
-
+        hash = 5381
+        for c in key:
+            hash = (hash * 33) + ord(c)
+        return hash
 
     def hash_index(self, key):
         """
@@ -73,7 +77,7 @@ class HashTable:
         #return self.fnv1(key) % self.capacity
         return self.djb2(key) % self.capacity
 
-    def put(self, key, value):
+    def put(self, key, value, resize=True):
         """
         Store the value with the given key.
 
@@ -82,6 +86,23 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        self.counter += 1
+        index = self.hash_index(key)
+        full = False
+        for x in self.containers[index]:
+            if x.value.key == key:
+                x.value.value = value
+                full = True
+        if not full:
+            entry = HashTableEntry(key, value)
+            self.containers[index].add_to_tail(entry)
+            self.counter += 1
+        if resize:
+            self.check_load()
+
+
+
+
 
 
     def delete(self, key):
@@ -93,7 +114,15 @@ class HashTable:
         Implement this.
         """
         # Your code here
-
+        index = self.hash_index(key)
+        box = self.containers[index]
+        for x in box:
+            if x.value.key == key:
+                box.delete(x)
+                self.counter -= 1
+                self.check_load()
+                return
+        return "WARNING: Key not found."
 
     def get(self, key):
         """
@@ -104,6 +133,13 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        index = self.hash_index(key)
+        box = self.containers[index]
+        for x in box:
+            if x.value.key == key:
+                return x.value.value
+        return None
+
 
 
     def resize(self, new_capacity):
@@ -114,6 +150,22 @@ class HashTable:
         Implement this.
         """
         # Your code here
+        self.capacity = new_capacity
+        old_capacity = self.containers
+        self.containers = [DoublyLinkedList() for i in range(self.capacity)]
+        for box in old_capacity:
+            for x in box:
+                self.put(x.value.key, x.value.value)
+        
+
+    def check_load(self):
+        if self.get_load_factor() > 0.7:
+            self.resize(self.capacity *2)
+        elif self.get_load_factor() < 0.2:
+            if self.capacity < MIN_CAPACITY * 2:
+                self.resize(MIN_CAPACITY)
+            else:
+                self.resize(self.capacity // 2)
 
 
 
